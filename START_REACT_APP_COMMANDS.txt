@@ -1,0 +1,20 @@
+Commands to start the React app
+
+1. Open a terminal in the project root.
+
+2. Move into the React app folder:
+cd moderation-ui
+
+3. Install dependencies:
+npm install
+
+4. Start the development server:
+npm run dev
+
+5. Open the local URL shown in the terminal, usually:
+http://localhost:5173
+
+If `npm run dev` fails on Windows because the project path contains `&`,
+use this command instead:
+
+node .\node_modules\vite\bin\vite.js
