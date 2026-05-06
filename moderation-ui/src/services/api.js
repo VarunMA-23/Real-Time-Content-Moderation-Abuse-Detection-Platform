@@ -1,9 +1,16 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 async function request(path, options = {}) {
+  const token = localStorage.getItem('shieldai_token')
+  const headers = { 
+    'Content-Type': 'application/json', 
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(options.headers || {}) 
+  }
+  
   const response = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
     ...options,
+    headers,
   })
 
   if (!response.ok) {
@@ -24,7 +31,16 @@ function toQuery(params = {}) {
 }
 
 const api = {
-  login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  login: async (email, password) => {
+    const data = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
+    if (data.accessToken) {
+      localStorage.setItem('shieldai_token', data.accessToken)
+    }
+    return data.user
+  },
+  logout: () => {
+    localStorage.removeItem('shieldai_token')
+  },
   moderate: (text) => request('/moderate', { method: 'POST', body: JSON.stringify({ text }) }),
   getJob: (jobId) => request(`/jobs/${jobId}`),
   getQueue: (filters = {}) => request(`/review${toQuery(filters)}`),
