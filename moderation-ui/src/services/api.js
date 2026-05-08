@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+const BASE_URL = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/v1').replace(/\/$/, '')
 
 async function request(path, options = {}) {
   const token = localStorage.getItem('shieldai_token')
@@ -14,8 +14,17 @@ async function request(path, options = {}) {
   })
 
   if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed: ${response.status}`)
+    let message = `Request failed: ${response.status}`
+    const text = await response.text()
+
+    try {
+      const errorBody = text ? JSON.parse(text) : null
+      message = errorBody?.error?.message || errorBody?.message || message
+    } catch {
+      message = text || message
+    }
+
+    throw new Error(message)
   }
 
   return response.json()

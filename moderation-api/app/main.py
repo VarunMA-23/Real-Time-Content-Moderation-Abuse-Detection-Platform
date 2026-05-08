@@ -1,8 +1,12 @@
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api.v1.api import api_router
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -10,10 +14,10 @@ app = FastAPI(
 )
 
 # Set all CORS enabled origins
-if settings.BACKEND_CORS_ORIGINS:
+if settings.CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[str(origin).strip("/") for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origins=[str(origin).strip("/") for origin in settings.CORS_ORIGINS],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -25,13 +29,13 @@ def health_check():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    # Standardized error format as per contract
+    logger.exception("Unhandled exception while processing %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=500,
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
-                "message": str(exc),
+                "message": "An unexpected error occurred.",
                 "details": None
             }
         },

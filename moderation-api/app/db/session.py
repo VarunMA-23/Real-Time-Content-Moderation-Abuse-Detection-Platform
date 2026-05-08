@@ -1,17 +1,13 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 
-engine = create_engine(
-    str(settings.SQLALCHEMY_DATABASE_URI),
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+db_uri = str(settings.SQLALCHEMY_DATABASE_URI)
+connect_args = {}
+if db_uri.startswith("sqlite"):
+    from sqlalchemy.pool import StaticPool
+    connect_args["check_same_thread"] = False
 
-async_engine = create_async_engine(
-    str(settings.ASYNC_SQLALCHEMY_DATABASE_URI),
-)
-AsyncSessionLocal = async_sessionmaker(
-    autocommit=False, autoflush=False, bind=async_engine
-)
+engine = create_engine(db_uri, connect_args=connect_args)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

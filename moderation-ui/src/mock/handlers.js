@@ -4,7 +4,15 @@ import { MOCK_ANALYTICS, MOCK_QUEUE } from './messages'
 export const handlers = [
   http.post('*/auth/login', async ({ request }) => {
     const { email } = await request.json()
-    return HttpResponse.json({ id: 'mod_1', name: 'Moderator', email })
+    return HttpResponse.json({
+      user: {
+        id: '11111111-1111-1111-1111-111111111111',
+        name: 'Moderator',
+        email,
+      },
+      accessToken: 'mock-access-token',
+      expiresIn: 691200,
+    })
   }),
   http.post('*/moderate', async ({ request }) => {
     const { text } = await request.json()

@@ -1,13 +1,13 @@
+import uuid
 from typing import Generator, Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import security
 from app.core.config import settings
-from app.db.session import SessionLocal, AsyncSessionLocal
+from app.db.session import SessionLocal
 from app.models.user import User
 from app.schemas.token import TokenPayload
 
@@ -22,13 +22,8 @@ def get_db() -> Generator:
     finally:
         db.close()
 
-async def get_async_db() -> Generator:
-    async with AsyncSessionLocal() as session:
-        yield session
-
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 SessionDep = Annotated[Session, Depends(get_db)]
-AsyncSessionDep = Annotated[AsyncSession, Depends(get_async_db)]
 
 def get_current_user(db: SessionDep, token: TokenDep) -> User:
     try:
@@ -36,12 +31,18 @@ def get_current_user(db: SessionDep, token: TokenDep) -> User:
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
+        user_id = uuid.UUID(token_data.sub) if token_data.sub else None
     except (JWTError, Exception):
         raise HTTPException(
-            status_code=status.HTTP_03_FORBIDDEN,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-    user = db.query(User).filter(User.id == token_data.sub).first()
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Could not validate credentials",
+        )
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:

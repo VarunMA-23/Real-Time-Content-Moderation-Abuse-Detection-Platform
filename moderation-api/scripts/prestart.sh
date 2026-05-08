@@ -18,11 +18,13 @@ while True:
         time.sleep(1)
 "
 
-# Create tables (for local dev, we use this instead of alembic for now to keep it simple)
-python -c "
+# Run Alembic migrations (for PostgreSQL in production)
+# Falls back to create_all for SQLite local dev
+alembic upgrade head 2>/dev/null || python -c "
 from app.db.base import Base
 from app.db.session import engine
 Base.metadata.create_all(bind=engine)
+print('Tables created via Base.metadata.create_all()')
 "
 
 # Seed data

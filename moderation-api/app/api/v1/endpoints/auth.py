@@ -1,15 +1,14 @@
 from datetime import timedelta
-from typing import Any
+from typing import Any, Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core import security
 from app.core.config import settings
 from app.models.user import User
-from app.schemas.token import Token
-from app.schemas.user import User as UserSchema, UserCreate
+from app.schemas.token import Token, LoginResponse
+from app.schemas.user import User as UserSchema
 from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
@@ -17,8 +16,6 @@ router = APIRouter()
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
-
-from app.schemas.token import Token, LoginResponse
 
 @router.post("/login", response_model=LoginResponse)
 def login(

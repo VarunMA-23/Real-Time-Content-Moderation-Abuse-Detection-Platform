@@ -6,8 +6,8 @@ import useModerationStore from '../store/moderationStore'
 function Login() {
   const navigate = useNavigate()
   const setUser = useModerationStore((s) => s.setUser)
-  const [email, setEmail] = useState('moderator@example.com')
-  const [password, setPassword] = useState('secret123')
+  const [email, setEmail] = useState('admin@shieldai.com')
+  const [password, setPassword] = useState('123456')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 

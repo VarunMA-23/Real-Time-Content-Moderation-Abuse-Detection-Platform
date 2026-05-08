@@ -1,5 +1,5 @@
 from typing import List, Optional, Union
-from pydantic import AnyHttpUrl, BeforeValidator, HttpUrl, PostgresDsn, computed_field
+from pydantic import BeforeValidator, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Annotated
 
@@ -22,37 +22,56 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     PROJECT_NAME: str = "ShieldAI"
 
-    # CORS
-    BACKEND_CORS_ORIGINS: Annotated[
-        List[str], BeforeValidator(parse_cors)
-    ] = ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"]
+    # CORS - as string that gets parsed to list
+    BACKEND_CORS_ORIGINS: str = (
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173,"
+        "http://localhost:3000,"
+        "http://127.0.0.1:3000,"
+        "http://localhost:3001,"
+        "http://127.0.0.1:3001"
+    )
 
-    # Postgres
+    # Override DATABASE_URL to use SQLite for local dev (e.g. sqlite:///./shieldai.db)
+    DATABASE_URL: Optional[str] = None
+
+    # Postgres (only used when DATABASE_URL is not set)
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "postgres"
     POSTGRES_DB: str = "shieldai"
-    
+
     @computed_field
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return PostgresDsn.build(
+    def CORS_ORIGINS(self) -> List[str]:
+        """Parse CORS origins from string to list."""
+        return parse_cors(self.BACKEND_CORS_ORIGINS)
+
+    @computed_field
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return str(PostgresDsn.build(
             scheme="postgresql+psycopg",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,
             path=self.POSTGRES_DB,
-        )
+        ))
 
     @computed_field
     @property
-    def ASYNC_SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return PostgresDsn.build(
+    def ASYNC_SQLALCHEMY_DATABASE_URI(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL.replace("+psycopg", "+asyncpg").replace("sqlite", "sqlite+aiosqlite")
+        return str(PostgresDsn.build(
             scheme="postgresql+asyncpg",
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PASSWORD,
             host=self.POSTGRES_SERVER,
             path=self.POSTGRES_DB,
-        )
+        ))
+
 
 settings = Settings()
