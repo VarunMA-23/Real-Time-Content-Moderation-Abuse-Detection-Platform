@@ -1,4 +1,11 @@
 .claude
 .cursor
 Covered
+**/__pycache__/
+*.py[cod]
+*.db
+*.sqlite
+*.sqlite3
+*.log
+moderation-api/.env
 moderation-ui/.env
