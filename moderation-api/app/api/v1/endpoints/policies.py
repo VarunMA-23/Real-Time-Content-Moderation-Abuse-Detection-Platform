@@ -1,10 +1,10 @@
 from typing import Any
-import uuid
 from fastapi import APIRouter
 
 from app.api import deps
 from app.repositories.policy_configs import PolicyConfigsRepository
 from app.schemas.policy_config import PolicyResponse
+from app.services.moderation import DEFAULT_POLICY_REGION
 
 router = APIRouter()
 
@@ -15,7 +15,7 @@ def get_policies(
     current_user: deps.CurrentUser,
 ) -> Any:
     repo = PolicyConfigsRepository(db)
-    rules = repo.get_current_policy(current_user.id, "US")
+    rules = repo.get_current_policy(current_user.id, DEFAULT_POLICY_REGION)
     return PolicyResponse(**rules)
 
 
@@ -28,7 +28,7 @@ def update_policies(
     repo = PolicyConfigsRepository(db)
     repo.update_policy(
         customer_id=current_user.id,
-        region="US",
+        region=DEFAULT_POLICY_REGION,
         rules=body.model_dump(),
         updated_by=current_user.id,
     )

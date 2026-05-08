@@ -7,6 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.models.policy_config import PolicyConfig
 
+DEFAULT_POLICY_RULES = {
+    "toxicityThreshold": 0.7,
+    "spamThreshold": 0.6,
+    "selfHarmThreshold": 0.5,
+    "hateSpeechThreshold": 0.7,
+    "autoBlock": False,
+    "llmReview": True,
+}
+
 
 class PolicyConfigsRepository:
     """Repository for PolicyConfig entity operations."""
@@ -75,23 +84,11 @@ class PolicyConfigsRepository:
         if config:
             return config.rules
 
-        # Return default policy rules
-        return {
-            "toxicityThreshold": 0.7,
-            "spamThreshold": 0.6,
-            "selfHarmThreshold": 0.5,
-            "hateSpeechThreshold": 0.7,
-            "autoBlock": False,
-            "llmReview": True,
-        }
+        return DEFAULT_POLICY_RULES.copy()
 
     def update_policy(self, customer_id: uuid.UUID, region: str, rules: Dict[str, Any],
                       updated_by: Optional[uuid.UUID] = None) -> PolicyConfig:
         """Update policy with a new version."""
-        # First get the current latest to copy rules from if needed
-        current = self.find_latest_by_customer_and_region(customer_id, region)
-
-        # Create new version
         return self.create(customer_id=customer_id, region=region, rules=rules, updated_by=updated_by)
 
     def find_by_customer(self, customer_id: uuid.UUID) -> List[PolicyConfig]:

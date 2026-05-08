@@ -1,6 +1,9 @@
 .claude
 .cursor
 Covered
+.venv/
+venv/
+npm-debug.log*
 **/__pycache__/
 *.py[cod]
 *.db

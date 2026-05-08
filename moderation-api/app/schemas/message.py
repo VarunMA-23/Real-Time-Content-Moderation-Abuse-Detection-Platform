@@ -1,7 +1,7 @@
 from typing import Optional, Any, Dict, List
 import uuid
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ModerateRequest(BaseModel):
@@ -29,7 +29,7 @@ class QueueItemResponse(BaseModel):
     scores: Dict[str, float]
     llmExplanation: Optional[str] = None
     policyViolation: Optional[str] = None
-    history: List[Dict[str, Any]] = []
+    history: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class QueueResponse(BaseModel):

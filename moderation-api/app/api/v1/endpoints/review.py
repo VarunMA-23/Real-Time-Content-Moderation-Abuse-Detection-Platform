@@ -9,22 +9,10 @@ from app.schemas.message import QueueResponse, QueueItemResponse
 from app.schemas.reviewer_decision import DecisionRequest, DecisionResponse
 from app.schemas.enums import (
     MessageStatus,
-    ModerationDecision,
-    ReviewerDecision,
-    ReviewerAction,
 )
+from app.services.moderation import resolve_reviewer_outcome, serialize_queue_item
 
 router = APIRouter()
-
-
-def to_frontend_decision(latest_decision: ModerationDecision | None, message_status: MessageStatus) -> str:
-    if latest_decision == ModerationDecision.BLOCK:
-        return "blocked"
-    if latest_decision == ModerationDecision.HOLD_FOR_REVIEW:
-        return "flagged"
-    if latest_decision == ModerationDecision.ALLOW:
-        return "allowed"
-    return message_status.value
 
 
 @router.get("/review", response_model=QueueResponse)
@@ -45,43 +33,7 @@ def get_review_queue(
     else:
         messages = msg_repo.find_flagged_messages_by_customer(current_user.id)
 
-    items = []
-    for msg in messages:
-        latest = mod_repo.get_latest_result_for_message(msg.id)
-        decision = to_frontend_decision(latest.decision if latest else None, msg.status)
-        labels = latest.labels if latest else {}
-        scores = {
-            "toxicity": labels.get("toxicity", labels.get("hate", 0)),
-            "spam": labels.get("spam", 0),
-            "selfHarm": labels.get("self_harm", labels.get("selfHarm", 0)),
-        }
-
-        history = []
-        for rd in msg.reviewer_decisions:
-            history.append({
-                "action": rd.action.value,
-                "actor": str(rd.reviewer_id),
-                "time": rd.created_at.isoformat() if rd.created_at else None,
-            })
-
-        violation = None
-        if labels:
-            for key in labels:
-                if labels.get(key, 0) > 0.7:
-                    violation = key.replace("_", " ").title()
-                    break
-
-        items.append(QueueItemResponse(
-            id=str(msg.id),
-            text=msg.content,
-            userId=str(msg.user_id),
-            timestamp=msg.created_at,
-            decision=decision,
-            scores=scores,
-            llmExplanation="Pending LLM analysis.",
-            policyViolation=violation,
-            history=history,
-        ))
+    items = [serialize_queue_item(msg, mod_repo.get_latest_result_for_message(msg.id)) for msg in messages]
 
     return QueueResponse(queue=items)
 
@@ -99,17 +51,7 @@ def submit_decision(
     dec_repo = ReviewerDecisionsRepository(db)
 
     message_id = uuid.UUID(body.messageId)
-
-    action_map = {
-        "approve": (ReviewerDecision.CONFIRM, ReviewerAction.APPROVE),
-        "reject": (ReviewerDecision.CONFIRM, ReviewerAction.REJECT),
-        "ban": (ReviewerDecision.CONFIRM, ReviewerAction.BAN),
-        "escalate": (ReviewerDecision.ESCALATE, ReviewerAction.ESCALATE),
-    }
-
-    rev_decision, rev_action = action_map.get(
-        body.action, (ReviewerDecision.CONFIRM, ReviewerAction.APPROVE)
-    )
+    rev_decision, rev_action, next_status = resolve_reviewer_outcome(body.action)
 
     dec_repo.create(
         message_id=message_id,
@@ -118,14 +60,6 @@ def submit_decision(
         action=rev_action,
         notes=None,
     )
-
-    if rev_action == ReviewerAction.REJECT:
-        msg_repo.update_status(message_id, MessageStatus.FLAGGED)
-    elif rev_action == ReviewerAction.BAN:
-        msg_repo.update_status(message_id, MessageStatus.BLOCKED)
-    elif rev_action == ReviewerAction.ESCALATE:
-        msg_repo.update_status(message_id, MessageStatus.ESCALATED)
-    elif rev_action == ReviewerAction.APPROVE:
-        msg_repo.update_status(message_id, MessageStatus.ALLOWED)
+    msg_repo.update_status(message_id, next_status)
 
     return DecisionResponse(success=True)

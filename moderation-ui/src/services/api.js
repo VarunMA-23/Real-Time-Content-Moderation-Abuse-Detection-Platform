@@ -1,7 +1,12 @@
 const BASE_URL = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/v1').replace(/\/$/, '')
+const TOKEN_STORAGE_KEY = 'shieldai_token'
+
+function getAuthToken() {
+  return localStorage.getItem(TOKEN_STORAGE_KEY)
+}
 
 async function request(path, options = {}) {
-  const token = localStorage.getItem('shieldai_token')
+  const token = getAuthToken()
   const headers = { 
     'Content-Type': 'application/json', 
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -43,12 +48,12 @@ const api = {
   login: async (email, password) => {
     const data = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
     if (data.accessToken) {
-      localStorage.setItem('shieldai_token', data.accessToken)
+      localStorage.setItem(TOKEN_STORAGE_KEY, data.accessToken)
     }
     return data.user
   },
   logout: () => {
-    localStorage.removeItem('shieldai_token')
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
   },
   moderate: (text) => request('/moderate', { method: 'POST', body: JSON.stringify({ text }) }),
   getJob: (jobId) => request(`/jobs/${jobId}`),
