@@ -65,38 +65,51 @@ moderation-ui/
 └── vite.config.js
 ```
 
-## Development Commands
+## Quick Start
 
-### Backend
+### Prerequisites
 
-```bash
+The project uses a local Python virtual environment (`.venv` at project root).
+
+```powershell
+# Activate virtual environment (PowerShell)
+.\.venv\Scripts\Activate.ps1
+```
+
+**Login Credentials:** `admin@shieldai.com` / `123456`
+
+### Backend (`moderation-api/`)
+
+The backend uses **SQLite** for local dev (configured via `DATABASE_URL=sqlite:///./shieldai.db` in `.env`). The migration auto-detects SQLite vs PostgreSQL.
+
+```powershell
 cd moderation-api
 
 # Install dependencies
-pip install -r requirements.txt
+.\.venv\Scripts\pip.exe install -r requirements.txt
 
 # Run database migrations
-alembic upgrade head
+.\.venv\Scripts\python.exe -m alembic upgrade head
 
-# Seed database with initial data
-python scripts/seed_db.py
+# Seed database with sample data (requires PYTHONPATH)
+$env:PYTHONPATH = "$pwd"; .\.venv\Scripts\python.exe scripts/seed_db.py
 
-# Start development server
-uvicorn app.main:app --reload --port 8000
+# Start development server (port 8000)
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 
 # Run tests
-pytest
+.\.venv\Scripts\python.exe -m pytest
 ```
 
-### Frontend
+### Frontend (`moderation-ui/`)
 
-```bash
+```powershell
 cd moderation-ui
 
 # Install dependencies
 npm install
 
-# Start development server (uses MSW mocks by default)
+# Start dev server (connects to backend at http://127.0.0.1:8000)
 npm run dev
 
 # Build for production
@@ -105,13 +118,21 @@ npm run build
 
 ### Docker
 
-```bash
+```powershell
 # Start infrastructure (PostgreSQL + backend)
 docker-compose up -d
 
 # View logs
 docker-compose logs -f backend
 ```
+
+### Default URLs
+
+| Service  | URL                              |
+|----------|----------------------------------|
+| Backend  | http://localhost:8000            |
+| API Docs | http://localhost:8000/v1/openapi.json |
+| Frontend | http://localhost:5173            |
 
 ## Key Architectural Patterns
 

@@ -12,3 +12,5 @@ npm-debug.log*
 *.log
 moderation-api/.env
 moderation-ui/.env
+ML_models_API/ML_files
+start.ps1
