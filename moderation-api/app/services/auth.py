@@ -17,7 +17,8 @@ def authenticate_user(
     invalid_credentials_status: int = status.HTTP_401_UNAUTHORIZED,
 ) -> User:
     """Validate credentials and return the active user."""
-    user = db.query(User).filter(User.email == email).first()
+    from sqlalchemy import select
+    user = db.scalar(select(User).where(User.email == email))
     if not user or not security.verify_password(password, user.hashed_password):
         raise HTTPException(
             status_code=invalid_credentials_status,

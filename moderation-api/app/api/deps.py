@@ -42,7 +42,8 @@ def get_current_user(db: SessionDep, token: TokenDep) -> User:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-    user = db.query(User).filter(User.id == user_id).first()
+    from sqlalchemy import select
+    user = db.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:

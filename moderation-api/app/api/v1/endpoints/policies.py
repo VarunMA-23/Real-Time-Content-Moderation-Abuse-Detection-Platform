@@ -32,4 +32,5 @@ def update_policies(
         rules=body.model_dump(),
         updated_by=current_user.id,
     )
+    db.commit()
     return body

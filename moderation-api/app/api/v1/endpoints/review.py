@@ -61,5 +61,7 @@ def submit_decision(
         notes=None,
     )
     msg_repo.update_status(message_id, next_status)
+    
+    db.commit()
 
     return DecisionResponse(success=True)

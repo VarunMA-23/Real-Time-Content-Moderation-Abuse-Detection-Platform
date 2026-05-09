@@ -1,11 +1,11 @@
 import { create } from 'zustand'
 
 const DEFAULT_POLICIES = {
-  toxicityThreshold: 0.8,
-  spamThreshold: 0.7,
+  toxicityThreshold: 0.7,
+  spamThreshold: 0.6,
   selfHarmThreshold: 0.5,
-  hateSpeechThreshold: 0.75,
-  autoBlock: true,
+  hateSpeechThreshold: 0.7,
+  autoBlock: false,
   llmReview: true,
 }
 
@@ -25,7 +25,11 @@ const useModerationStore = create((set, get) => ({
     selectedMessageId: state.selectedMessageId === id ? state.queue.find((m) => m.id !== id)?.id ?? null : state.selectedMessageId,
   })),
   policies: DEFAULT_POLICIES,
-  setPolicies: (patch) => set((state) => ({ policies: { ...state.policies, ...patch } })),
+  policiesLoaded: false,
+  setPolicies: (patch) => set((state) => ({ 
+    policies: { ...state.policies, ...patch },
+    policiesLoaded: true 
+  })),
   getSelectedMessage: () => {
     const state = get()
     return state.queue.find((m) => m.id === state.selectedMessageId) ?? null

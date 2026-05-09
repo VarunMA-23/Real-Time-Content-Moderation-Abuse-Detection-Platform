@@ -4,13 +4,15 @@ import useModerationStore from '../store/moderationStore'
 
 function usePolicies() {
   const policies = useModerationStore((s) => s.policies)
+  const policiesLoaded = useModerationStore((s) => s.policiesLoaded)
   const setPolicies = useModerationStore((s) => s.setPolicies)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
-  const loadPolicies = useCallback(async () => {
+  const loadPolicies = useCallback(async (force = false) => {
+    if (policiesLoaded && !force) return
     setLoading(true)
     setError('')
     try {
@@ -21,13 +23,10 @@ function usePolicies() {
     } finally {
       setLoading(false)
     }
-  }, [setPolicies])
+  }, [setPolicies, policiesLoaded])
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadPolicies()
-    }, 0)
-    return () => clearTimeout(timer)
+    loadPolicies()
   }, [loadPolicies])
 
   const savePolicies = useCallback(async () => {
